@@ -5,7 +5,7 @@ import { BRAND, SCORE_KINDS, isConfigured, demoOn } from './config.js';
 import { makeStore } from './store.js';
 import { renderGate, renderError } from './gate.js';
 import * as M from './model.js';
-import { sparkline, lineChart, heatmap, tableView, emptyBox } from './charts.js';
+import { lineChart, heatmap, tableView, emptyBox } from './charts.js';
 
 const REFRESH_MS = 30000;
 
@@ -179,10 +179,6 @@ function renderStats() {
           ]), true)
       : tile('Top duelist', '—', el('span', { text: 'no duels settled yet' }), true),
     tile('Points this week', num(h.thisWeek), deltaNote),
-    h.topPlayer
-      ? tile('Top scorer', M.displayName(h.topPlayer.player),
-          el('span', { text: `${num(h.topPlayer.points)} points this week` }), true)
-      : tile('Top scorer', '—', el('span', { text: 'nothing logged yet' }), true),
   );
 }
 
@@ -229,7 +225,6 @@ function renderLeaderboard() {
     const track = el('div', { class: 'lb-bar-track' }, [
       el('div', { class: 'lb-bar-fill', style: { width: `${(r.points / max) * 100}%` } }),
     ]);
-    const spark = el('div', { class: 'lb-spark' });
 
     host.appendChild(el('div', { class: 'lb-row', 'data-rank': r.rank }, [
       el('div', { class: 'lb-rank', text: String(r.rank) }),
@@ -243,15 +238,7 @@ function renderLeaderboard() {
               text: `${r.record.wins}–${r.record.losses} duels` })
           : null,
       ]),
-      spark,
     ]));
-
-    sparkline(spark, r.spark, {
-      color: M.colorOf(r.player),
-      labels: last14Labels(),
-      unit: 'points',
-      ariaLabel: `${M.displayName(r.player)} last 14 days`,
-    });
   }
 
   tableHost.appendChild(tableView(
@@ -259,16 +246,6 @@ function renderLeaderboard() {
     rows.map(r => [r.rank, M.displayName(r.player), num(r.points), num(r.deals)]),
     [true, false, true, true],
   ));
-}
-
-function last14Labels() {
-  const out = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    out.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
-  }
-  return out;
 }
 
 /* -- duels -- */
@@ -356,14 +333,15 @@ function renderMatches() {
   const list = [...snap.matches].sort((a, b) =>
     (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1));
 
+  // No matches → hide the whole section so the board stays calm.
+  const title = $('#matchesTitle');
   if (!list.length) {
-    host.appendChild(el('div', { class: 'card' }, [
-      el('div', { class: 'card-body', style: { paddingTop: '20px' } }, [
-        emptyBox('A match is a scoreboard the whole floor shares — a sprint, a month, a campaign.', 'No matches yet'),
-      ]),
-    ]));
+    host.style.display = 'none';
+    if (title) title.style.display = 'none';
     return;
   }
+  host.style.display = '';
+  if (title) title.style.display = '';
 
   for (const m of list) {
     const rows = M.matchStandings(m, snap.entries, pmap);

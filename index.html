@@ -33,11 +33,11 @@
   <main id="app">
     <div id="banners"></div>
 
-    <!-- headline numbers -->
-    <section class="grid grid-4" id="statRow" style="margin-top:20px"></section>
+    <!-- headline numbers — three, duel-forward -->
+    <section class="grid grid-3" id="statRow" style="margin-top:20px"></section>
 
     <!-- THE MAIN EVENT: live duels, front and centre -->
-    <section style="margin-top:26px">
+    <section style="margin-top:30px">
       <div class="section-title">
         <h2>The Arena</h2>
         <span class="hint">Head to head &mdash; 1v1 &amp; 2v2</span>
@@ -49,27 +49,45 @@
     </section>
 
     <!-- leaderboard | feed -->
-    <div class="grid grid-main" style="margin-top:26px">
+    <div class="grid grid-main" style="margin-top:30px">
+      <section class="card">
+        <div class="card-head">
+          <h2>Leaderboard</h2>
+          <span class="spacer"></span>
+          <select id="lbRange" aria-label="Leaderboard period" style="width:auto;padding:5px 9px;font-size:13px">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last 12 months</option>
+          </select>
+        </div>
+        <div class="card-body">
+          <div id="podium"></div>
+          <div class="lb" id="leaderboard"></div>
+          <div id="lbTable"></div>
+        </div>
+      </section>
 
-      <div class="grid" style="gap:16px">
-        <section class="card">
-          <div class="card-head">
-            <h2>Leaderboard</h2>
-            <span class="spacer"></span>
-            <select id="lbRange" aria-label="Leaderboard period" style="width:auto;padding:5px 9px;font-size:13px">
-              <option value="7">Last 7 days</option>
-              <option value="30" selected>Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="365">Last 12 months</option>
-            </select>
-          </div>
-          <div class="card-body">
-            <div id="podium"></div>
-            <div class="lb" id="leaderboard"></div>
-            <div id="lbTable"></div>
-          </div>
-        </section>
+      <section class="card">
+        <div class="card-head"><h2>Latest scores</h2></div>
+        <div class="card-body"><div class="feed" id="feed"></div></div>
+      </section>
+    </div>
 
+    <!-- matches -->
+    <div class="section-title" id="matchesTitle">
+      <h2>Matches</h2>
+      <span class="hint">Everyone in, one board</span>
+    </div>
+    <div class="grid grid-fit" id="matches"></div>
+
+    <!-- analytics, tucked away so they don't crowd the board -->
+    <details class="analytics" id="analytics">
+      <summary>
+        <span>Team analytics</span>
+        <span class="hint">momentum &amp; power hours</span>
+      </summary>
+      <div class="analytics-body">
         <section class="card">
           <div class="card-head">
             <h2>Team momentum</h2>
@@ -82,34 +100,16 @@
           </div>
           <div class="card-body"><div id="momentum"></div></div>
         </section>
+
+        <div class="grid grid-heat" style="margin-top:16px">
+          <section class="card">
+            <div class="card-head"><h2>Power hours</h2><span class="hint" style="margin-left:10px">when the floor closes deals</span></div>
+            <div class="card-body" style="padding-top:8px"><div id="powerHours"></div></div>
+          </section>
+          <div class="grid" id="powerStats" style="gap:16px;align-content:start"></div>
+        </div>
       </div>
-
-      <div class="grid" style="gap:16px">
-        <section class="card">
-          <div class="card-head"><h2>Latest scores</h2></div>
-          <div class="card-body"><div class="feed" id="feed"></div></div>
-        </section>
-      </div>
-    </div>
-
-    <!-- matches -->
-    <div class="section-title">
-      <h2>Matches</h2>
-      <span class="hint">Everyone in, one board</span>
-    </div>
-    <div class="grid grid-fit" id="matches"></div>
-
-    <!-- power hours -->
-    <div class="section-title">
-      <h2>Power hours</h2>
-      <span class="hint">When the floor actually closes deals</span>
-    </div>
-    <div class="grid grid-heat">
-      <section class="card">
-        <div class="card-body" style="padding-top:18px"><div id="powerHours"></div></div>
-      </section>
-      <div class="grid" id="powerStats" style="gap:16px;align-content:start"></div>
-    </div>
+    </details>
   </main>
 </div>
 
