@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales Arena — Team Panters</title>
+<meta name="description" content="Live leaderboard, duels and matches for the sales & support floor.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9A%A1</text></svg>">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="topbar">
+    <a class="brand" href="./">
+      <span class="brand-mark" id="brandMark">&#9889;</span>
+      <span>
+        <span id="brandTeam">Team Panters</span>
+        <span class="brand-sub" id="brandArena">Sales Arena</span>
+      </span>
+    </a>
+    <span class="topbar-spacer"></span>
+    <span class="livedot" id="liveDot" title="Auto-refreshing">live</span>
+    <nav class="navlinks">
+      <a class="navlink" href="./" aria-current="page">Arena</a>
+      <a class="navlink" href="admin.html">Admin</a>
+    </nav>
+    <button class="btn btn-ghost btn-sm" id="tvBtn" title="Fullscreen wallboard mode">TV</button>
+    <button class="btn btn-ghost btn-icon" id="themeBtn" title="Switch theme" aria-label="Switch theme">&#9681;</button>
+  </header>
+
+  <main id="app">
+    <div id="banners"></div>
+
+    <!-- headline numbers -->
+    <section class="grid grid-4" id="statRow" style="margin-top:20px"></section>
+
+    <!-- podium + leaderboard | live duels -->
+    <div class="grid grid-main" style="margin-top:22px">
+
+      <div class="grid" style="gap:16px">
+        <section class="card">
+          <div class="card-head">
+            <h2>Leaderboard</h2>
+            <span class="spacer"></span>
+            <select id="lbRange" aria-label="Leaderboard period" style="width:auto;padding:5px 9px;font-size:13px">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="9999">All time</option>
+            </select>
+          </div>
+          <div class="card-body">
+            <div id="podium"></div>
+            <div class="lb" id="leaderboard"></div>
+            <div id="lbTable"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Team momentum</h2>
+            <span class="spacer"></span>
+            <select id="momRange" aria-label="Momentum period" style="width:auto;padding:5px 9px;font-size:13px">
+              <option value="7">7 days</option>
+              <option value="14" selected>14 days</option>
+              <option value="30">30 days</option>
+            </select>
+          </div>
+          <div class="card-body"><div id="momentum"></div></div>
+        </section>
+      </div>
+
+      <div class="grid" style="gap:16px">
+        <section class="card">
+          <div class="card-head">
+            <h2>Duels</h2>
+            <span class="spacer"></span>
+            <span class="tag" id="duelCount">0 live</span>
+          </div>
+          <div class="card-body"><div class="grid" id="duels" style="gap:12px"></div></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Latest scores</h2></div>
+          <div class="card-body"><div class="feed" id="feed"></div></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- matches -->
+    <div class="section-title">
+      <h2>Matches</h2>
+      <span class="hint">Everyone in, one board</span>
+    </div>
+    <div class="grid grid-fit" id="matches"></div>
+
+    <!-- power hours -->
+    <div class="section-title">
+      <h2>Power hours</h2>
+      <span class="hint">When the floor actually closes deals</span>
+    </div>
+    <div class="grid grid-heat">
+      <section class="card">
+        <div class="card-body" style="padding-top:18px"><div id="powerHours"></div></div>
+      </section>
+      <div class="grid" id="powerStats" style="gap:16px;align-content:start"></div>
+    </div>
+  </main>
+</div>
+
+<div id="gate"></div>
+<script type="module" src="assets/js/arena.js"></script>
+</body>
+</html>
