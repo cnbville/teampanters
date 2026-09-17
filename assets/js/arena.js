@@ -167,14 +167,22 @@ function renderStats() {
       ]);
 
   host.append(
+    tile('Live duels', num(h.liveDuels),
+      el('span', { text: h.liveDuels
+        ? `${h.finishedDuels} settled so far`
+        : 'start one in the console' })),
+    h.topDuelist
+      ? tile('Top duelist', M.displayName(h.topDuelist.player),
+          el('span', {}, [
+            el('span', { class: 'up', text: `${h.topDuelist.wins}W` }),
+            document.createTextNode(` · ${h.topDuelist.losses}L across duels`),
+          ]), true)
+      : tile('Top duelist', '—', el('span', { text: 'no duels settled yet' }), true),
     tile('Points this week', num(h.thisWeek), deltaNote),
-    tile('Scores logged', num(h.deals), el('span', { text: 'in the last 7 days' })),
     h.topPlayer
-      ? tile('Top of the week', M.displayName(h.topPlayer.player),
-          el('span', { text: `${num(h.topPlayer.points)} points` }), true)
-      : tile('Top of the week', '—', el('span', { text: 'nothing logged yet' }), true),
-    tile('Running now', `${h.liveDuels + h.liveMatches}`,
-      el('span', { text: `${h.liveDuels} duel${h.liveDuels === 1 ? '' : 's'} · ${h.liveMatches} match${h.liveMatches === 1 ? '' : 'es'}` })),
+      ? tile('Top scorer', M.displayName(h.topPlayer.player),
+          el('span', { text: `${num(h.topPlayer.points)} points this week` }), true)
+      : tile('Top scorer', '—', el('span', { text: 'nothing logged yet' }), true),
   );
 }
 
@@ -190,7 +198,7 @@ function tile(label, value, note, small = false) {
 
 function renderLeaderboard() {
   const days = Number($('#lbRange').value);
-  const rows = M.leaderboard(snap.players, snap.events, days);
+  const rows = M.leaderboard(snap.players, snap.events, days, snap.duels);
   const podium = $('#podium');
   const host = $('#leaderboard');
   const tableHost = $('#lbTable');
@@ -230,6 +238,10 @@ function renderLeaderboard() {
       el('div', { class: 'lb-value' }, [
         document.createTextNode(num(r.points)),
         el('small', { text: 'pts' }),
+        r.record && r.record.played
+          ? el('div', { class: 'lb-record', title: 'duel record',
+              text: `${r.record.wins}–${r.record.losses} duels` })
+          : null,
       ]),
       spark,
     ]));
@@ -261,55 +273,62 @@ function last14Labels() {
 
 /* -- duels -- */
 
+/* One side of a hero duel: stacked avatars, team name, big score. */
+function duelSide(d, side, pmap, s) {
+  const team = M.duelTeam(d, side, pmap);
+  const lead = s.leader === side;
+  return el('div', { class: `duel-side ${side}${lead ? ' lead' : ''}` }, [
+    el('div', { class: `avstack${team.length > 1 ? ' pair' : ''}` }, team.map(p => avatar(p))),
+    el('div', { class: 'who' }, [
+      el('div', { class: 'nm', text: M.duelTeamName(d, side, pmap) }),
+      el('div', { class: 'sc', text: num(side === 'a' ? s.a : s.b) }),
+    ]),
+  ]);
+}
+
 function renderDuels() {
   const pmap = M.playerMap(snap.players);
   const host = $('#duels');
   clear(host);
 
   const live = snap.duels.filter(d => d.status === 'live');
-  const rest = snap.duels.filter(d => d.status !== 'live').slice(0, 3);
+  const rest = snap.duels.filter(d => d.status !== 'live').slice(0, 4);
   const list = [...live, ...rest];
 
   $('#duelCount').textContent = `${live.length} live`;
 
   if (!list.length) {
-    host.appendChild(emptyBox('Pick two teammates in the admin console and start one.', 'No duels yet'));
+    host.appendChild(el('div', { class: 'card', style: { gridColumn: '1 / -1' } }, [
+      el('div', { class: 'card-body', style: { paddingTop: '20px' } }, [
+        emptyBox('Pick two teammates (or two pairs) in the admin console and put a stake on it.', 'The Arena is quiet'),
+      ]),
+    ]));
     return;
   }
 
   for (const d of list) {
-    const a = pmap.get(d.player_a);
-    const b = pmap.get(d.player_b);
-    if (!a || !b) continue;
+    const teamA = M.duelTeam(d, 'a', pmap);
+    const teamB = M.duelTeam(d, 'b', pmap);
+    if (!teamA.length || !teamB.length) continue;
     const s = M.duelState(d);
+    const fmt = M.duelFormat(d);
 
-    host.appendChild(el('div', { class: `duel${s.targetHit && d.status === 'live' ? ' hot' : ''}` }, [
+    host.appendChild(el('div', { class: `duel hero${s.targetHit && d.status === 'live' ? ' hot' : ''}` }, [
       el('div', { class: 'duel-head' }, [
-        el('span', { class: 'duel-title', text: d.title || `${M.displayName(a)} vs ${M.displayName(b)}` }),
+        el('span', { class: `tag fmt-${fmt}`, text: fmt }),
+        el('span', { class: 'duel-title', text: M.duelTitle(d, pmap) }),
         el('span', { class: 'spacer' }),
         el('span', { class: `tag ${d.status}`, text: d.status === 'live' ? 'live' : d.status }),
       ]),
 
       el('div', { class: 'duel-sides' }, [
-        el('div', { class: `duel-side a${s.leader === 'a' ? ' lead' : ''}` }, [
-          avatar(a),
-          el('div', { class: 'who' }, [
-            el('div', { class: 'nm', text: M.displayName(a) }),
-            el('div', { class: 'sc', text: num(s.a) }),
-          ]),
-        ]),
+        duelSide(d, 'a', pmap, s),
         el('span', { class: 'duel-vs', text: 'VS' }),
-        el('div', { class: `duel-side b${s.leader === 'b' ? ' lead' : ''}` }, [
-          avatar(b),
-          el('div', { class: 'who' }, [
-            el('div', { class: 'nm', text: M.displayName(b) }),
-            el('div', { class: 'sc', text: num(s.b) }),
-          ]),
-        ]),
+        duelSide(d, 'b', pmap, s),
       ]),
 
       el('div', { class: 'tug', role: 'img',
-        'aria-label': `${M.displayName(a)} ${num(s.a)}, ${M.displayName(b)} ${num(s.b)}` }, [
+        'aria-label': `${M.duelTeamName(d, 'a', pmap)} ${num(s.a)}, ${M.duelTeamName(d, 'b', pmap)} ${num(s.b)}` }, [
         el('div', { class: 'tug-a', style: { width: `${s.pctA}%` } }),
         el('div', { class: 'tug-b', style: { width: `${s.pctB}%` } }),
       ]),
@@ -318,8 +337,10 @@ function renderDuels() {
         el('span', { text: d.metric || 'Points' }),
         d.target ? el('span', { text: `· first to ${num(d.target)}` }) : null,
         el('span', { class: 'spacer' }),
-        d.stake ? el('span', { class: 'duel-stake', html: `🏆 <b>${esc(d.stake)}</b>` }) : null,
         d.status === 'live' && d.ends_at ? el('span', { text: countdown(d.ends_at) }) : null,
+        d.stake ? el('div', { class: 'duel-stake-line' }, [
+          el('span', { class: 'duel-stake', html: `🏆 <b>${esc(d.stake)}</b>` }),
+        ]) : null,
       ]),
     ]));
   }

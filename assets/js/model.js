@@ -25,8 +25,9 @@ export function eventsWithin(events, days) {
   return events.filter(e => new Date(e.occurred_at).getTime() >= from);
 }
 
-/* Leaderboard rows: one measure (points), ranked. */
-export function leaderboard(players, events, days) {
+/* Leaderboard rows: one measure (points), ranked. Duels (optional) attach a
+   win/loss record to each row. */
+export function leaderboard(players, events, days, duels = []) {
   const win = eventsWithin(events, days);
   const totals = new Map();
   const counts = new Map();
@@ -34,12 +35,14 @@ export function leaderboard(players, events, days) {
     totals.set(e.player_id, (totals.get(e.player_id) || 0) + Number(e.points || 0));
     counts.set(e.player_id, (counts.get(e.player_id) || 0) + 1);
   }
+  const records = duelRecords(duels, players);
   return players
     .filter(p => p.active !== false)
     .map(p => ({
       player: p,
       points: totals.get(p.id) || 0,
       deals: counts.get(p.id) || 0,
+      record: records.get(p.id) || { wins: 0, losses: 0, played: 0 },
       spark: dailyFor(win, p.id, 14),
     }))
     .sort((a, b) => b.points - a.points || b.deals - a.deals || a.player.name.localeCompare(b.player.name))
@@ -116,8 +119,10 @@ export function headline(players, events, duels, matches) {
     delta,
     deals: week.length,
     topPlayer: board[0] && board[0].points > 0 ? board[0] : null,
+    topDuelist: topDuelist(duels, players),
     liveDuels: duels.filter(d => d.status === 'live').length,
     liveMatches: matches.filter(m => m.status === 'live').length,
+    finishedDuels: duels.filter(d => d.status === 'finished').length,
     roster: players.filter(p => p.active !== false).length,
   };
 }
@@ -134,6 +139,63 @@ export function duelState(d) {
     leader: a === b ? null : (a > b ? 'a' : 'b'),
     targetHit: d.target ? Math.max(a, b) >= Number(d.target) : false,
   };
+}
+
+/* ---- 1v1 / 2v2 helpers ---- */
+
+/* The players on one side of a duel, captain first, partner (if any) second. */
+export function duelTeam(d, side, pmap) {
+  const ids = side === 'a' ? [d.player_a, d.player_a2] : [d.player_b, d.player_b2];
+  return ids.filter(Boolean).map(id => pmap.get(id)).filter(Boolean);
+}
+
+export function is2v2(d) {
+  return Boolean(d.player_a2 || d.player_b2);
+}
+
+export function duelFormat(d) {
+  return is2v2(d) ? '2v2' : '1v1';
+}
+
+/* "Sanne & Youssef" for a pair, or the single name. */
+export function duelTeamName(d, side, pmap) {
+  const team = duelTeam(d, side, pmap);
+  if (!team.length) return side === 'a' ? 'Side A' : 'Side B';
+  return team.map(displayName).join(' & ');
+}
+
+export function duelTitle(d, pmap) {
+  return d.title || `${duelTeamName(d, 'a', pmap)} vs ${duelTeamName(d, 'b', pmap)}`;
+}
+
+/* Win/loss record per player across FINISHED duels (draws ignored). Works for
+   both 1v1 and 2v2 — every player on the winning side gets the win. */
+export function duelRecords(duels, players) {
+  const rec = new Map(players.map(p => [p.id, { wins: 0, losses: 0, played: 0 }]));
+  const bump = (id, key) => { const r = rec.get(id); if (r) { r[key]++; r.played++; } };
+  for (const d of duels) {
+    if (d.status !== 'finished') continue;
+    const a = Number(d.score_a || 0);
+    const b = Number(d.score_b || 0);
+    if (a === b) continue;
+    const aWon = a > b;
+    for (const id of [d.player_a, d.player_a2].filter(Boolean)) bump(id, aWon ? 'wins' : 'losses');
+    for (const id of [d.player_b, d.player_b2].filter(Boolean)) bump(id, aWon ? 'losses' : 'wins');
+  }
+  return rec;
+}
+
+/* The player with the most duel wins (needs at least one). */
+export function topDuelist(duels, players) {
+  const rec = duelRecords(duels, players);
+  let best = null;
+  for (const p of players.filter(x => x.active !== false)) {
+    const r = rec.get(p.id);
+    if (r && r.wins > 0 && (!best || r.wins > best.wins || (r.wins === best.wins && r.losses < best.losses))) {
+      best = { player: p, ...r };
+    }
+  }
+  return best;
 }
 
 /* Match standings, ranked. */

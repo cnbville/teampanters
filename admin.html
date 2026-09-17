@@ -34,15 +34,15 @@
     <div id="banners"></div>
 
     <div class="tabs" role="tablist">
-      <button class="tab on" data-panel="score"   role="tab">Log scores</button>
+      <button class="tab on" data-panel="duels"   role="tab">Duels</button>
+      <button class="tab"    data-panel="score"   role="tab">Log scores</button>
       <button class="tab"    data-panel="roster"  role="tab">Roster</button>
-      <button class="tab"    data-panel="duels"   role="tab">Duels</button>
       <button class="tab"    data-panel="matches" role="tab">Matches</button>
       <button class="tab"    data-panel="settings" role="tab">Settings</button>
     </div>
 
     <!-- ============ LOG SCORES ============ -->
-    <section class="panel on" id="panel-score">
+    <section class="panel" id="panel-score">
       <div class="section-title">
         <h2>One tap, one score</h2>
         <span class="hint">Lands on the Arena within 30 seconds</span>
@@ -80,14 +80,14 @@
     </section>
 
     <!-- ============ DUELS ============ -->
-    <section class="panel" id="panel-duels">
+    <section class="panel on" id="panel-duels">
       <div class="section-title">
         <h2>Duels</h2>
-        <span class="hint">Head to head, one winner</span>
+        <span class="hint">1v1 or 2v2 — pick a stake</span>
         <span class="spacer"></span>
         <button class="btn btn-primary btn-sm" id="addDuelBtn">New duel</button>
       </div>
-      <div class="grid grid-2" id="duelAdminList"></div>
+      <div class="grid grid-fit" id="duelAdminList"></div>
     </section>
 
     <!-- ============ MATCHES ============ -->

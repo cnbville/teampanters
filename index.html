@@ -36,8 +36,20 @@
     <!-- headline numbers -->
     <section class="grid grid-4" id="statRow" style="margin-top:20px"></section>
 
-    <!-- podium + leaderboard | live duels -->
-    <div class="grid grid-main" style="margin-top:22px">
+    <!-- THE MAIN EVENT: live duels, front and centre -->
+    <section style="margin-top:26px">
+      <div class="section-title">
+        <h2>The Arena</h2>
+        <span class="hint">Head to head &mdash; 1v1 &amp; 2v2</span>
+        <span class="spacer"></span>
+        <span class="tag live" id="duelCount">0 live</span>
+        <a class="btn btn-ghost btn-sm tv-hide" href="admin.html#duels">Set up a duel</a>
+      </div>
+      <div class="grid grid-duels" id="duels"></div>
+    </section>
+
+    <!-- leaderboard | feed -->
+    <div class="grid grid-main" style="margin-top:26px">
 
       <div class="grid" style="gap:16px">
         <section class="card">
@@ -73,15 +85,6 @@
       </div>
 
       <div class="grid" style="gap:16px">
-        <section class="card">
-          <div class="card-head">
-            <h2>Duels</h2>
-            <span class="spacer"></span>
-            <span class="tag" id="duelCount">0 live</span>
-          </div>
-          <div class="card-body"><div class="grid" id="duels" style="gap:12px"></div></div>
-        </section>
-
         <section class="card">
           <div class="card-head"><h2>Latest scores</h2></div>
           <div class="card-body"><div class="feed" id="feed"></div></div>

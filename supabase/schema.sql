@@ -39,12 +39,16 @@ create table if not exists public.score_events (
 create table if not exists public.duels (
   id          uuid primary key default gen_random_uuid(),
   title       text,
+  -- Each side has a captain (player_a / player_b) and an optional partner
+  -- (player_a2 / player_b2). Both partners null = a 1v1; either set = a 2v2.
   player_a    uuid not null references public.players(id) on delete cascade,
   player_b    uuid not null references public.players(id) on delete cascade,
+  player_a2   uuid references public.players(id) on delete set null,
+  player_b2   uuid references public.players(id) on delete set null,
   metric      text default 'Sales',
   target      numeric,
-  score_a     numeric not null default 0,
-  score_b     numeric not null default 0,
+  score_a     numeric not null default 0,   -- side A team score
+  score_b     numeric not null default 0,   -- side B team score
   status      text not null default 'live',
   stake       text,
   winner      uuid references public.players(id) on delete set null,
@@ -54,6 +58,10 @@ create table if not exists public.duels (
   constraint duels_status_check    check (status in ('scheduled','live','finished')),
   constraint duels_distinct_check  check (player_a <> player_b)
 );
+
+-- Safe to re-run if you created the duels table before 2v2 support landed.
+alter table public.duels add column if not exists player_a2 uuid references public.players(id) on delete set null;
+alter table public.duels add column if not exists player_b2 uuid references public.players(id) on delete set null;
 
 create table if not exists public.matches (
   id          uuid primary key default gen_random_uuid(),

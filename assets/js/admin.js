@@ -411,23 +411,25 @@ function renderDuelAdmin() {
 
   if (!snap.duels.length) {
     host.appendChild(el('div', { class: 'card' }, [el('div', { class: 'card-body', style: { paddingTop: '20px' } }, [
-      emptyBox('Two people, one metric, something at stake. That is a duel.', 'No duels yet'),
+      emptyBox('Two teammates or two pairs, one metric, something at stake. That is a duel.', 'No duels yet'),
     ])]));
     return;
   }
 
   for (const d of snap.duels) {
-    const a = pmap.get(d.player_a);
-    const b = pmap.get(d.player_b);
-    if (!a || !b) continue;
+    const teamA = M.duelTeam(d, 'a', pmap);
+    const teamB = M.duelTeam(d, 'b', pmap);
+    if (!teamA.length || !teamB.length) continue;
     const s = M.duelState(d);
+    const fmt = M.duelFormat(d);
 
     const bump = (side, by) => write(
       () => store.update('duels', d.id, { [side]: Math.max(0, Number(d[side] || 0) + by) }));
 
     host.appendChild(el('section', { class: 'card' }, [
       el('div', { class: 'card-head' }, [
-        el('h3', { text: d.title || `${M.displayName(a)} vs ${M.displayName(b)}` }),
+        el('span', { class: `tag fmt-${fmt}`, text: fmt }),
+        el('h3', { text: M.duelTitle(d, pmap) }),
         el('span', { class: 'spacer' }),
         el('span', { class: `tag ${d.status}`, text: d.status }),
       ]),
@@ -437,8 +439,8 @@ function renderDuelAdmin() {
           el('div', { class: 'tug-b', style: { width: `${s.pctB}%` } }),
         ]),
 
-        scoreStepper(a, s.a, 'var(--series-1)', by => bump('score_a', by)),
-        scoreStepper(b, s.b, 'var(--series-2)', by => bump('score_b', by)),
+        sideStepper(d, 'a', pmap, s.a, 'var(--series-1)', by => bump('score_a', by)),
+        sideStepper(d, 'b', pmap, s.b, 'var(--series-2)', by => bump('score_b', by)),
 
         el('div', { style: { display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' } }, [
           el('span', { style: { fontSize: '12.5px', color: 'var(--text-muted)', alignSelf: 'center', flex: '1' },
@@ -460,26 +462,39 @@ function renderDuelAdmin() {
   }
 }
 
-function scoreStepper(p, value, color, onBump) {
+/* One side's score control. In a 2v2 it shows both partners' avatars and the
+   joined team name; the +/- bumps the shared team score. */
+function sideStepper(d, side, pmap, value, color, onBump) {
+  const team = M.duelTeam(d, side, pmap);
+  const name = M.duelTeamName(d, side, pmap);
+  const stack = el('span', { class: `avstack${team.length > 1 ? ' pair' : ''}` }, team.map(p => avatar(p, 'sm')));
   return el('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 0' } }, [
-    avatar(p, 'sm'),
-    el('span', { style: { fontWeight: '620', flex: '1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, text: M.displayName(p) }),
+    stack,
+    el('span', { style: { fontWeight: '620', flex: '1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, text: name }),
     el('span', { style: { fontWeight: '720', fontSize: '18px', color, fontVariantNumeric: 'tabular-nums', minWidth: '40px', textAlign: 'right' }, text: num(value) }),
-    el('button', { class: 'btn btn-sm', onclick: () => onBump(-1), 'aria-label': `minus one for ${M.displayName(p)}` }, '−'),
-    el('button', { class: 'btn btn-sm btn-primary', onclick: () => onBump(1), 'aria-label': `plus one for ${M.displayName(p)}` }, '+'),
+    el('button', { class: 'btn btn-sm', onclick: () => onBump(-1), 'aria-label': `minus one for ${name}` }, '−'),
+    el('button', { class: 'btn btn-sm btn-primary', onclick: () => onBump(1), 'aria-label': `plus one for ${name}` }, '+'),
   ]);
 }
 
 function finishDuel(d) {
   const s = M.duelState(d);
-  const winner = s.leader === 'a' ? d.player_a : s.leader === 'b' ? d.player_b : null;
+  // winner is a single-player column, so it only means anything in a 1v1;
+  // 2v2 records are derived from the scores, not this field.
+  const winner = M.is2v2(d) ? null
+    : s.leader === 'a' ? d.player_a
+    : s.leader === 'b' ? d.player_b : null;
   write(() => store.update('duels', d.id, { status: 'finished', winner }), 'Duel closed');
 }
 
 function duelModal(d) {
   const title  = textInput(d?.title || '', 'Fiber Friday');
+  const format = selectInput([{ value: '1v1', label: '1v1 — head to head' }, { value: '2v2', label: '2v2 — pairs' }],
+    d && M.is2v2(d) ? '2v2' : '1v1');
   const aSel   = el('select', {});
+  const a2Sel  = el('select', {});
   const bSel   = el('select', {});
+  const b2Sel  = el('select', {});
   const metric = textInput(d?.metric || 'Sales', 'Sales');
   const target = numInput(d?.target ?? '', '1');
   const stake  = textInput(d?.stake || '', 'Loser buys the Friday round');
@@ -490,15 +505,34 @@ function duelModal(d) {
 
   fillPlayerSelect(aSel, d?.player_a);
   fillPlayerSelect(bSel, d?.player_b);
+  fillPlayerSelect(a2Sel, d?.player_a2);
+  fillPlayerSelect(b2Sel, d?.player_b2);
   if (!d && snap.players.length > 1) bSel.selectedIndex = 1;
+  if (!d && snap.players.length > 3) { a2Sel.selectedIndex = 2; b2Sel.selectedIndex = 3; }
+
+  const a2Field = field('Side A — partner', a2Sel);
+  const b2Field = field('Side B — partner', b2Sel);
+  const aLabel  = field('Side A', aSel);
+  const bLabel  = field('Side B', bSel);
+
+  const applyFormat = () => {
+    const two = format.value === '2v2';
+    a2Field.node.style.display = two ? '' : 'none';
+    b2Field.node.style.display = two ? '' : 'none';
+    aLabel.node.querySelector('span').textContent = two ? 'Side A — captain' : 'Challenger';
+    bLabel.node.querySelector('span').textContent = two ? 'Side B — captain' : 'Opponent';
+  };
+  format.addEventListener('change', applyFormat);
+  applyFormat();
 
   modal({
     title: d ? 'Edit duel' : 'New duel',
-    sub: 'Two names, one number to chase, and something worth winning.',
+    sub: 'One-on-one or two-on-two — pick a number to chase and put something on it.',
     fields: [
       field('Title', title),
-      field('Challenger', aSel),
-      field('Opponent', bSel),
+      field('Format', format),
+      aLabel, a2Field,
+      bLabel, b2Field,
       field('What counts', metric),
       field('First to (optional)', target),
       field('At stake', stake),
@@ -507,12 +541,16 @@ function duelModal(d) {
     ],
     submitLabel: d ? 'Save' : 'Start the duel',
     onSubmit: async () => {
-      if (!aSel.value || !bSel.value) { toast('Pick two teammates', 'bad'); return false; }
-      if (aSel.value === bSel.value) { toast('A duel needs two different people', 'bad'); return false; }
+      const two = format.value === '2v2';
+      const ids = two ? [aSel.value, a2Sel.value, bSel.value, b2Sel.value] : [aSel.value, bSel.value];
+      if (ids.some(v => !v)) { toast(two ? 'Pick all four players' : 'Pick two teammates', 'bad'); return false; }
+      if (new Set(ids).size !== ids.length) { toast('Each teammate can only be in one spot', 'bad'); return false; }
       const row = {
         title: title.value.trim() || null,
         player_a: aSel.value,
         player_b: bSel.value,
+        player_a2: two ? a2Sel.value : null,
+        player_b2: two ? b2Sel.value : null,
         metric: metric.value.trim() || 'Points',
         target: target.value === '' ? null : Number(target.value),
         stake: stake.value.trim() || null,

@@ -1,13 +1,15 @@
 # Sales Arena
 
 A small, good-looking scoreboard for a mixed sales / IT floor at an ISP.
-Add your teammates, put two of them in a **duel**, run a **match** the whole
-team plays, and log scores in one tap. The Arena page is built to live
-fullscreen on a screen in the room.
+It's built around **duels** — put two teammates head to head (1v1) or two pairs
+against each other (2v2), with something at stake. Add a team-wide **match** and
+one-tap score logging on top. The Arena page is built to live fullscreen on a
+screen in the room.
 
-- **`index.html`** — the Arena. Read-only. Leaderboard, live duels, match
-  standings, team momentum, power hours, and a running feed of every score.
-  Press **T** for fullscreen wallboard mode; it refreshes itself every 30s.
+- **`index.html`** — the Arena. Read-only. Live duels front and centre, then the
+  leaderboard (with each player's duel record), team momentum, matches, power
+  hours, and a running feed. Press **T** for fullscreen wallboard mode; it
+  refreshes itself every 30s.
 - **`admin.html`** — your console. Roster, duels, matches, and a one-tap
   score grid. Sign-in required.
 
@@ -85,26 +87,40 @@ the things you log most at the top.
 
 ## Publishing to GitHub Pages
 
-The workflow in `.github/workflows/pages.yml` deploys on every push. Turn Pages
-on once:
+The workflow in `.github/workflows/pages.yml` deploys the `main` branch on every
+push. Two one-time settings (both need a repo admin — the workflow token can't
+set them itself):
 
-**Settings → Pages → Build and deployment → Source: _GitHub Actions_**
+1. **Settings → General → Default branch:** set it to **`main`**. The
+   `github-pages` environment only lets the default branch deploy, so this has
+   to be `main` for the deploy to be allowed.
+2. **Settings → Pages → Build and deployment → Source:** **GitHub Actions**.
 
-Then push. The site lands at
-`https://<your-user>.github.io/<repo>/`.
+Then push to `main` (or re-run the last job from the **Actions** tab). The site
+lands at `https://<your-user>.github.io/<repo>/` — for this repo,
+`https://cnbville.github.io/teampanters/`.
 
-If Pages is already on and the run failed, re-run it from the **Actions** tab —
-the first run needs the Pages source set before it can deploy.
+If a run failed before you set those, that's expected — it can't create the
+Pages site on its own. Re-run it once both are set.
 
 ---
 
 ## Day to day
 
-**Running a duel.** Admin → Duels → *New duel*. Two people, what counts
-("Fiber deals"), optionally a number to race to, and something at stake. The
-stake is the part that makes people care — "loser buys the Friday round" beats
-"recognition". Bump scores with `+` / `−` as they land; hit **Finish** and the
-winner is recorded from the score.
+**Running a duel.** The duel is the centrepiece — it's the first tab in the
+console and the hero of the Arena. Admin → Duels → *New duel*, pick the format:
+
+- **1v1** — one person vs. another.
+- **2v2** — two pairs. Each side has a captain and a partner; the side shares
+  one score, and both partners get the win or loss on their record.
+
+Then set what counts ("Fiber deals"), optionally a number to race to, and
+something at stake. The stake is the part that makes people care — "losing pair
+runs the coffee for a week" beats "recognition". Bump each side's score with
+`+` / `−` as it lands; hit **Finish** and the result is settled.
+
+Every finished duel feeds each player's **W–L record**, shown on the leaderboard
+and summed into the "Top duelist" tile at the top of the Arena.
 
 **Running a match.** A match is one board the whole floor shares — a monthly
 sprint, a campaign. Add people to it, set a team target, and the Arena shows
