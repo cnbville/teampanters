@@ -155,7 +155,8 @@ function modal({ title, sub, fields, submitLabel = 'Save', onSubmit, extraAction
   const body = el('div', {});
   for (const f of fields) body.appendChild(f.node);
 
-  const close = () => clear(host);
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  const close = () => { document.removeEventListener('keydown', onKey); clear(host); };
 
   const box = el('div', { class: 'modal' }, [
     el('h2', { text: title }),
@@ -173,9 +174,7 @@ function modal({ title, sub, fields, submitLabel = 'Save', onSubmit, extraAction
 
   const back = el('div', { class: 'modal-back', onclick: e => { if (e.target === back) close(); } }, [box]);
   host.appendChild(back);
-  document.addEventListener('keydown', function esc(e) {
-    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
-  });
+  document.addEventListener('keydown', onKey);
   const first = box.querySelector('input, select, textarea');
   if (first) setTimeout(() => first.focus(), 50);
   return { close };

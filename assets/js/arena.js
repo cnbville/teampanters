@@ -1,6 +1,6 @@
 /* The Arena — read-only wallboard. Safe to leave on a TV all day. */
 
-import { $, el, clear, num, esc, relTime, countdown, initTheme, toggleTheme, toast } from './util.js';
+import { $, el, clear, num, esc, relTime, countdown, initTheme, toggleTheme, toast, debounce } from './util.js';
 import { BRAND, SCORE_KINDS, isConfigured, demoOn } from './config.js';
 import { makeStore } from './store.js';
 import { renderGate, renderError } from './gate.js';
@@ -63,7 +63,8 @@ async function boot() {
   setInterval(() => { if (!document.hidden) refresh(); }, REFRESH_MS);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   if (store.subscribe) {
-    try { store.subscribe(() => refresh()); } catch { /* realtime is a bonus, polling is the floor */ }
+    const onChange = debounce(() => refresh(), 800);
+    try { store.subscribe(onChange); } catch { /* realtime is a bonus, polling is the floor */ }
   }
 }
 

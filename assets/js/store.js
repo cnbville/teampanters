@@ -53,9 +53,9 @@ class SupabaseStore {
       this._all('duels',          q => q.order('created_at', { ascending: false })),
       this._all('matches',        q => q.order('created_at', { ascending: false })),
       this._all('match_entries',  q => q),
-      this._all('score_events',   q => q.gte('occurred_at', daysAgo(120).toISOString())
+      this._all('score_events',   q => q.gte('occurred_at', daysAgo(365).toISOString())
                                         .order('occurred_at', { ascending: false })
-                                        .limit(2000)),
+                                        .limit(5000)),
     ]);
     return { players, duels, matches, entries, events };
   }
